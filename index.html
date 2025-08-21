@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Auto Content Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    .container { max-width: 800px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #333; }
+    .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+    input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #45a049; }
+    .output { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #fafafa; }
+    .history { margin-top: 30px; }
+    .history-item { padding: 10px; border-bottom: 1px solid #eee; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Auto Content Generator</h1>
+    <div class="input-group">
+      <input type="text" id="topicInput" placeholder="Enter a topic...">
+      <button id="generateBtn">Generate</button>
+    </div>
+    <div class="output">
+      <h2 id="titleOutput">Your AI generated title will appear here</h2>
+      <p id="contentOutput">AI generated content will appear here.</p>
+    </div>
+    <div class="history">
+      <h3>Recent Generations</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+<script>
+const topicInput=document.getElementById("topicInput");
+const generateBtn=document.getElementById("generateBtn");
+const titleOutput=document.getElementById("titleOutput");
+const contentOutput=document.getElementById("contentOutput");
+const historyList=document.getElementById("historyList");
+let generationHistory=[];
+
+generateBtn.addEventListener("click",generateContent);
+topicInput.addEventListener("keypress",e=>{if(e.key==="Enter") generateContent();});
+
+async function generateContent(){
+  const topic=topicInput.value.trim();
+  if(!topic){alert("Please enter a topic first");return;}
+  titleOutput.textContent="Generating with AI...";
+  contentOutput.textContent="Please wait...";
+
+  try{
+    const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic})});
+    if(!response.ok) throw new Error("HTTP "+response.status);
+    const data=await response.json();
+    const title=data.title||"Untitled";
+    const content=data.content||"No content.";
+    titleOutput.textContent=title;
+    contentOutput.textContent=content;
+    addToHistory(topic,title);
+  }catch(err){
+    titleOutput.textContent="Generation failed";
+    contentOutput.textContent=err.message;
+  }
+}
+function addToHistory(topic,title){
+  generationHistory.unshift({topic,title,time:new Date().toLocaleString()});
+  if(generationHistory.length>10) generationHistory.pop();
+  updateHistoryDisplay();
+}
+function updateHistoryDisplay(){
+  historyList.innerHTML="";
+  generationHistory.forEach(item=>{
+    const div=document.createElement("div");
+    div.className="history-item";
+    div.innerHTML=`<strong>${item.title}</strong><br><small>${item.topic} | ${item.time}</small>`;
+    historyList.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
