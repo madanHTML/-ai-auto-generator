@@ -11,26 +11,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://api.deepseek.com/v1/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [{ role: "user", content: `Generate a catchy blog title and a short article about ${topic}.` }],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${process.env.GOOGLE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `Generate a catchy blog title and a short article about ${topic}.` }]
+            }
+          ]
+        })
+      }
+    );
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "No response";
 
-    const [titleLine, ...rest] = content.split('\n');
-    const title = titleLine.replace(/^Title:/i, '').trim();
-    const article = rest.join('\n').trim();
+    // ✅ Safe parsing of Gemini response
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 
-    res.status(200).json({ title, content: article });
+    res.status(200).json({ content });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
